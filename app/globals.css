@@ -28,10 +28,10 @@ html { scroll-behavior: smooth; }
 .hexc.open:hover polygon { fill: rgb(var(--orange) / .35); }
 .hexc.open:focus-visible polygon { stroke: rgb(var(--orange)); stroke-width: 5; }
 .buzz-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
-.btn-gold { background: linear-gradient(180deg, #F8D96F 0%, #E0AC25 55%, #C8951A 100%); color: #2B1F00; font-weight: 700; border: 0;
-  box-shadow: 0 6px 16px -8px rgb(200 149 26 / .8), inset 0 1px 0 rgb(255 255 255 / .45); transition: transform .15s, filter .2s; }
-.btn-gold:hover:not(:disabled) { filter: brightness(1.06); }
-.btn-gold:active:not(:disabled) { transform: scale(.96); }
+.btn-gold { background: linear-gradient(180deg, #F1E4B8 0%, #E6D49C 100%); color: #6B5A2B; font-weight: 600; border: 1px solid #DCC98F;
+  box-shadow: 0 2px 6px -3px rgb(150 120 40 / .35); transition: transform .15s, filter .2s, background .2s; }
+.btn-gold:hover:not(:disabled) { filter: brightness(1.03) saturate(1.05); }
+.btn-gold:active:not(:disabled) { transform: scale(.97); }
 .btn-gold:disabled { opacity: .55; }
-.btn-gold-on { outline: 3px solid rgb(var(--ink)); outline-offset: 2px; }
+.btn-gold-on { outline: 2px solid #B89A4A; outline-offset: 2px; }
 .board, .board * { outline: none !important; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }

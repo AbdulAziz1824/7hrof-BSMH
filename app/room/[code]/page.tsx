@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { QRCodeSVG } from "qrcode.react";
 import Shell from "@/components/Shell";
 import { supabase, ensureSession } from "@/lib/supabase";
 import { arError } from "@/lib/errors";
@@ -52,7 +53,8 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
   }, [code, router]);
 
   const isHost = players.some((p) => p.user_id === me && p.is_host);
-  const hasBothTeams = players.some((p) => p.team === "green") && players.some((p) => p.team === "orange");
+  const manual = room?.mode === "board_manual";
+  const hasBothTeams = manual || players.some((p) => p.team === "green") && players.some((p) => p.team === "orange");
 
   async function start() {
     if (!room) return;
@@ -86,6 +88,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
     );
   };
   const spectators = players.filter((p) => !p.team);
+  const viewers = manual ? spectators.filter((p) => !p.is_host) : [];
 
   return (
     <Shell title={!room || room.status === "waiting" ? "غرفة الانتظار" : "المباراة"}>
@@ -99,6 +102,14 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
               onClick={async () => { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
               {copied ? "تم النسخ" : "نسخ رابط المشاركة"}
             </button>
+            {room.status === "waiting" && origin && (
+              <div className="mt-5 flex flex-col items-center gap-2">
+                <div className="rounded-2xl bg-white p-3 shadow-sm" role="img" aria-label="باركود الانضمام إلى الغرفة">
+                  <QRCodeSVG value={link} size={168} fgColor="#0F1D2E" bgColor="#FFFFFF" level="M" />
+                </div>
+                <p className="text-sm opacity-70">امسح الباركود للانضمام مباشرة</p>
+              </div>
+            )}
           </div>
           <p className="mt-4 text-sm opacity-75">
             {room.board_size}×{room.board_size} · {room.total_rounds} {room.total_rounds === 1 ? "جولة" : "جولات"} · {MODES[room.mode]}
@@ -106,11 +117,17 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
           <p role="status" className={`mt-2 text-sm ${live ? "text-team-green" : "text-team-orange"}`}>
             {live ? "متصل مباشرة" : "جارٍ إعادة الاتصال…"}
           </p>
-          <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${room.status === "waiting" ? "" : "hidden"}`}>
+          <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${room.status === "waiting" && !manual ? "" : "hidden"}`}>
             {col("green", "الفريق الأخضر", "bg-team-green")}
             {col("orange", "الفريق البرتقالي", "bg-team-orange")}
           </div>
-          {spectators.length > 0 && (
+          {manual && room.status === "waiting" && (
+            <p className="mt-4 rounded-2xl bg-surface p-4 text-center text-sm leading-7 opacity-90">
+              نمط اللوحة اليدوية: المنظم وحده يدير اللوحة بدون لاعبين، ومن ينضم يشاهد اللوحة فقط.
+              {viewers.length > 0 && <><br />المشاهدون: {viewers.map((p) => p.name).join("، ")}</>}
+            </p>
+          )}
+          {!manual && spectators.length > 0 && (
             <p className="mt-4 text-sm opacity-75">المنظم (لا يلعب): {spectators.map((p) => p.name).join("، ")}</p>
           )}
           {room.status === "waiting" ? (
@@ -126,7 +143,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
               <p role="status" className="mt-6 rounded-2xl bg-surface p-4 text-center opacity-80">بانتظار المنظم ليبدأ المباراة…</p>
             )
           ) : room.letters?.length ? (
-            <GameBoard room={room} players={players} me={me} onError={setError} onRefresh={refreshRoom} />
+            <GameBoard room={room} players={players} me={me} onError={setError} onRefresh={refreshRoom} mode={room.mode} />
           ) : (
             <p role="status" className="mt-6 rounded-2xl bg-surface p-4 text-center">جارٍ تجهيز اللوحة…</p>
           )}

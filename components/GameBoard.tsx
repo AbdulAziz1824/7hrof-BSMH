@@ -14,7 +14,7 @@ type P = { user_id: string; name: string; team: "green" | "orange" | null; is_ho
 const TEAM: Record<string, string> = { green: "الأخضر", orange: "البرتقالي" };
 const G = "rgb(var(--green))", O = "rgb(var(--orange))", INK = "rgb(var(--ink))";
 const btn = "btn-gold rounded-xl px-4 py-2.5";
-const dot = (c: string) => <span className={`ms-2 inline-block h-3.5 w-3.5 rounded-full border-2 border-[#2B1F00]/60 align-middle ${c}`} />;
+const dot = (c: string) => <span className={`ms-2 inline-block h-3.5 w-3.5 rounded-full border-2 border-[#6B5A2B]/50 align-middle ${c}`} />;
 const WIN_REDIRECT_MS = 13000;   // بعد الفوز: العودة للرئيسية
 const END_REDIRECT_MS = 3000;    // بعد إنهاء المنظم للجولة
 
@@ -27,7 +27,7 @@ const hexPts = (cx: number, cy: number) =>
   }).join(" ");
 const center = (r: number, c: number) => ({ x: 1.5 * R * c, y: HH * (r + (Math.abs(c) % 2 === 1 ? 0.5 : 0)) });
 
-export default function GameBoard({ room, players, me, onError, onRefresh }: { room: GameRoom; players: P[]; me: string; onError: (m: string) => void; onRefresh?: () => void }) {
+export default function GameBoard({ room, players, me, onError, onRefresh, mode = "board_buzzer" }: { room: GameRoom; players: P[]; me: string; onError: (m: string) => void; onRefresh?: () => void; mode?: string }) {
   const router = useRouter();
   const n = room.board_size;
   const letters = room.letters ?? [], owners = room.owners ?? [];
@@ -35,7 +35,9 @@ export default function GameBoard({ room, players, me, onError, onRefresh }: { r
   const myTeam = players.find((p) => p.user_id === me)?.team ?? null;
   const act = room.active_cell, finished = room.status === "finished";
   const buzzer = players.find((p) => p.user_id === room.buzz_user);
-  const canBuzz = !!myTeam && !finished && act !== null && !room.buzz_user && room.locked_team !== myTeam;
+  const manual = mode === "board_manual";              // لوحة فقط بيد المنظم، بلا أزرار سرعة
+  const showBoard = isHost || mode !== "buzzer_only";  // نمط أزرار السرعة: اللاعبون لا يرون اللوحة
+  const canBuzz = !manual && !!myTeam && !finished && act !== null && !room.buzz_user && room.locked_team !== myTeam;
 
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [left, setLeft] = useState(0);
@@ -106,14 +108,14 @@ export default function GameBoard({ room, players, me, onError, onRefresh }: { r
 
   return (
     <div className="mt-4">
-      <svg viewBox={geo.vb} role="img" aria-label="لوحة اللعب" className="board mx-auto w-full max-w-md" strokeLinejoin="round">
+      {showBoard && <svg viewBox={geo.vb} role="img" aria-label="لوحة اللعب" className="board mx-auto w-full max-w-md" strokeLinejoin="round">
         {geo.cells.filter((x) => x.kind !== "play").map(({ r, c, kind }) => {
           const { x, y } = center(r, c);
           return <polygon key={`e${r}_${c}`} points={hexPts(x, y)} fill={kind === "green" ? G : O} stroke={INK} strokeWidth="2.5" />;
         })}
         {order.map(({ r, c }) => {
           const i = r * n + c, ch = letters[i] ?? "", o = owners[i], { x, y } = center(r, c);
-          const open = isHost && !finished && !o;
+          const open = isHost && !finished && (manual || !o);
           const pick = () => { if (open) void call("pick_cell", { p_cell: i }); };
           return (
             <g key={i} className={`hexc ${open ? "open" : ""}`} style={{ cursor: open ? "pointer" : "default" }}
@@ -129,10 +131,10 @@ export default function GameBoard({ room, players, me, onError, onRefresh }: { r
             </g>
           );
         })}
-      </svg>
-      <p className="mt-2 text-center text-sm opacity-70">
+      </svg>}
+      {showBoard && <p className="mt-2 text-center text-sm opacity-70">
         <span className="text-team-green">الأخضر: الأعلى ↔ الأسفل</span> · <span className="text-team-orange">البرتقالي: اليسار ↔ اليمين</span>
-      </p>
+      </p>}
 
       <div className="mt-4 rounded-2xl bg-surface p-5 text-center" role="status">
         {finished ? (
@@ -148,14 +150,14 @@ export default function GameBoard({ room, players, me, onError, onRefresh }: { r
             </>
           )
         ) : act === null ? (
-          <p>{isHost ? "اختر خلية من اللوحة لتبدأ السؤال." : "بانتظار المنظم ليختار خلية…"}</p>
+          <p>{isHost ? (manual ? "اختر خلية من اللوحة ثم أعطها للفريق الذي كسبها." : "اختر خلية من اللوحة لتبدأ السؤال.") : manual ? "المنظم يدير اللوحة…" : "بانتظار المنظم ليختار خلية…"}</p>
         ) : (
           <>
             <p className="text-lg">الحرف: <span className="font-display text-3xl">{letters[act]}</span></p>
-            <p className="mt-1 opacity-80">
+            {!manual && <p className="mt-1 opacity-80">
               {buzzer ? `أسرع ضغطة: ${buzzer.name} (الفريق ${TEAM[room.buzz_team ?? ""]})` : "بانتظار أسرع ضغطة…"}
               {!buzzer && room.locked_team && ` — الفريق ${TEAM[room.locked_team]} أخطأ`}
-            </p>
+            </p>}
             {myTeam && !room.buzz_user && room.locked_team !== myTeam && (
               <button type="button" disabled={pressedUi}
                 onPointerDown={(e) => { if (e.pointerType === "mouse" && e.button !== 0) return; fire(); }}
@@ -176,12 +178,13 @@ export default function GameBoard({ room, players, me, onError, onRefresh }: { r
       {isHost && !finished && (
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {act !== null && (<>
-            {buzzer && (<>
+            {!manual && buzzer && (<>
               <button type="button" onClick={() => call("judge", { p_correct: true })} className={btn}>إجابة صحيحة</button>
               <button type="button" onClick={() => call("judge", { p_correct: false })} className={btn}>إجابة خاطئة</button>
             </>)}
             <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "green" })} className={btn}>للأخضر{dot("bg-team-green")}</button>
             <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "orange" })} className={btn}>للبرتقالي{dot("bg-team-orange")}</button>
+            {manual && <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "" })} className={btn}>تفريغ الخلية</button>}
             <button type="button" onClick={() => call("skip_cell")} className={btn}>تخطي</button>
           </>)}
           <button type="button" onClick={() => setConfirmEnd(true)} className={btn}>إنهاء الجولة</button>
@@ -198,7 +201,7 @@ export default function GameBoard({ room, players, me, onError, onRefresh }: { r
             <h2 id="end-t" className="font-display text-2xl">إنهاء الجولة؟</h2>
             <p id="end-d" className="mt-2 leading-7 opacity-80">ستتوقف المباراة عند جميع اللاعبين ويعودون إلى الصفحة الرئيسية.</p>
             <div className="mt-5 flex gap-3">
-              <button type="button" autoFocus onClick={() => setConfirmEnd(false)} className="flex-1 rounded-xl border-2 border-[#D9A520] px-4 py-3 font-bold">إلغاء</button>
+              <button type="button" autoFocus onClick={() => setConfirmEnd(false)} className="flex-1 rounded-xl border-2 border-[#DCC98F] px-4 py-3 font-bold">إلغاء</button>
               <button type="button" onClick={async () => { setConfirmEnd(false); const ok = await call("end_round"); if (ok) router.push("/"); }}
                 className="btn-gold flex-1 rounded-xl px-4 py-3">نعم، أنهِ الجولة</button>
             </div>

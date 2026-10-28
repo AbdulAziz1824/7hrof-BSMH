@@ -17,6 +17,8 @@ export default function CreateRoom() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const canPlay = mode !== "board_manual";   // اللوحة اليدوية: المنظم لا يلعب
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setError("");
@@ -24,7 +26,7 @@ export default function CreateRoom() {
       await ensureSession();
       const { data, error } = await supabase.rpc("create_room", {
         p_name: name, p_board_size: size, p_rounds: rounds, p_mode: mode,
-        p_host_plays: plays, p_team: plays ? team : null,
+        p_host_plays: canPlay && plays, p_team: canPlay && plays ? team : null,
       });
       if (error) throw error;
       router.push(`/room/${data.code}`);
@@ -41,9 +43,9 @@ export default function CreateRoom() {
         <Seg label="عدد الجولات" value={rounds} onChange={setRounds} options={[[1, "جولة"], [2, "جولتان"], [3, "ثلاث جولات"]]} />
         <Seg label="نمط اللعب" value={mode} onChange={setMode} options={[
           ["board_buzzer", "لوحة + أزرار سرعة"], ["buzzer_only", "أزرار سرعة فقط"], ["board_manual", "لوحة بتحكم يدوي"]]} />
-        <Seg label="دور المنظم" value={plays ? "play" : "host"} onChange={(v) => setPlays(v === "play")}
-          options={[["host", "إدارة فقط"], ["play", "إدارة ولعب"]]} />
-        {plays && <Seg label="فريقك" value={team} onChange={setTeam} options={[["green", "الأخضر"], ["orange", "البرتقالي"]]} />}
+        {canPlay && <Seg label="دور المنظم" value={plays ? "play" : "host"} onChange={(v) => setPlays(v === "play")}
+          options={[["host", "إدارة فقط"], ["play", "إدارة ولعب"]]} />}
+        {canPlay && plays && <Seg label="فريقك" value={team} onChange={setTeam} options={[["green", "الأخضر"], ["orange", "البرتقالي"]]} />}
         {error && <p role="alert" className="mt-5 rounded-xl bg-team-orange/15 p-3 text-team-orange">{error}</p>}
         <button disabled={busy} className="btn-gold mt-8 w-full rounded-2xl px-6 py-4 text-lg">
           {busy ? "جارٍ الإنشاء…" : "إنشاء الغرفة"}
