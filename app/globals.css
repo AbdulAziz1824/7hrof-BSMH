@@ -13,4 +13,15 @@ html { background: rgb(var(--paper)); color: rgb(var(--ink)); }
 body { font-family: var(--font-body), sans-serif; min-height: 100vh; }
 :focus-visible { outline: 3px solid rgb(var(--orange)); outline-offset: 3px; border-radius: 8px; }
 .hex { clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%); }
+html { scroll-behavior: smooth; }
+@keyframes pageIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes glow { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+.page-in { animation: pageIn .5s cubic-bezier(.22, 1, .36, 1) backwards; }
+.rise { animation: pageIn .7s cubic-bezier(.22, 1, .36, 1) var(--d, 0ms) backwards; }
+.pop { animation: pop .55s cubic-bezier(.34, 1.56, .64, 1) var(--d, 0ms) backwards; }
+.svg-pop { transform-box: fill-box; transform-origin: center; }
+.glow { animation: glow 2.2s ease-in-out infinite; }
+.lift { transition: transform .3s cubic-bezier(.22, 1, .36, 1), box-shadow .3s; }
+.lift:hover { transform: translateY(-5px); box-shadow: 0 16px 32px -14px rgb(var(--ink) / .3); }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

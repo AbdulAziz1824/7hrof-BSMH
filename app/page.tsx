@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import { delay } from "@/lib/anim";
 
 const ROWS = [
   [["أ", ""], ["ب", "g"], ["ت", ""], ["ث", "o"]],
@@ -22,20 +23,20 @@ export default function Home() {
       <header className="flex items-center justify-between py-6">
         <Logo />
         <nav className="flex gap-5 text-sm font-medium">
-          <Link href="/how-to-play" className="hover:underline">طريقة اللعب</Link>
-          <Link href="/about" className="hover:underline">عن الموقع</Link>
+          <Link href="/how-to-play" className="transition hover:text-team-orange hover:underline">طريقة اللعب</Link>
+          <Link href="/about" className="transition hover:text-team-orange hover:underline">عن الموقع</Link>
         </nav>
       </header>
 
       <section className="grid items-center gap-10 py-10 md:grid-cols-2">
         <div>
-          <h1 className="font-display text-5xl leading-tight md:text-6xl">
+          <h1 className="rise font-display text-5xl leading-tight md:text-6xl" style={delay(100)}>
             حرف بحرف، <br /> الفريق الأسرع يربط الطريق
           </h1>
-          <p className="mt-5 max-w-md text-lg leading-8 opacity-80">
+          <p className="rise mt-5 max-w-md text-lg leading-8 opacity-80" style={delay(250)}>
             لعبة حروف جماعية بين فريقين: أجب أولًا، اكسب الخلية، وصِل بين أطراف اللوحة قبل خصمك.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="rise mt-8 flex flex-wrap gap-3" style={delay(400)}>
             <Link href="/create" className="rounded-2xl bg-team-green px-7 py-4 text-lg font-bold text-white shadow-lg shadow-team-green/30 transition active:scale-95">إنشاء غرفة</Link>
             <Link href="/join" className="rounded-2xl bg-team-orange px-7 py-4 text-lg font-bold text-white shadow-lg shadow-team-orange/30 transition active:scale-95">الانضمام إلى غرفة</Link>
           </div>
@@ -45,8 +46,8 @@ export default function Home() {
           <div className="flex flex-col">
             {ROWS.map((row, i) => (
               <div key={i} className="flex gap-1" style={{ marginInlineStart: i * 36, marginTop: i ? -14 : 0 }}>
-                {row.map(([ch, t]) => (
-                  <div key={ch} className={`hex flex h-[84px] w-[76px] items-center justify-center font-display text-3xl ${cell(t)}`}>{ch}</div>
+                {row.map(([ch, t], j) => (
+                  <div key={ch} style={delay(300 + (i * 4 + j) * 60)} className={`hex pop flex h-[84px] w-[76px] items-center justify-center font-display text-3xl ${cell(t)}`}>{ch}</div>
                 ))}
               </div>
             ))}
@@ -55,18 +56,17 @@ export default function Home() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        {FEATURES.map(([title, text]) => (
-          <div key={title} className="rounded-2xl bg-surface p-6">
+        {FEATURES.map(([title, text], i) => (
+          <div key={title} style={delay(700 + i * 120)} className="rise lift rounded-2xl bg-surface p-6">
             <h2 className="font-display text-2xl">{title}</h2>
             <p className="mt-2 leading-7 opacity-75">{text}</p>
           </div>
         ))}
       </section>
 
-      <footer className="mt-14 flex flex-wrap gap-5 text-sm opacity-70">
-        <Link href="/privacy">سياسة الخصوصية</Link>
-        <Link href="/terms">شروط الاستخدام</Link>
-        <Link href="/contact">تواصل معنا</Link>
+      <footer className="mt-14 flex flex-wrap items-center gap-5 text-sm opacity-70">
+        <Link href="/contact" className="transition hover:opacity-100 hover:underline">تواصل معنا</Link>
+        <span>© 7ROF BSMH</span>
       </footer>
     </main>
   );
