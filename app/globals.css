@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink: 15 29 46; --paper: 242 245 248; --surface: 255 255 255;
+  --green: 23 163 74; --orange: 245 130 32;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink: 234 240 246; --paper: 10 18 28; --surface: 18 32 51; --green: 52 199 110; --orange: 255 156 66; }
+}
+html { background: rgb(var(--paper)); color: rgb(var(--ink)); }
+body { font-family: var(--font-body), sans-serif; min-height: 100vh; }
+:focus-visible { outline: 3px solid rgb(var(--orange)); outline-offset: 3px; border-radius: 8px; }
+.hex { clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
