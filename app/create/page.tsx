@@ -45,7 +45,7 @@ export default function CreateRoom() {
           options={[["host", "إدارة فقط"], ["play", "إدارة ولعب"]]} />
         {plays && <Seg label="فريقك" value={team} onChange={setTeam} options={[["green", "الأخضر"], ["orange", "البرتقالي"]]} />}
         {error && <p role="alert" className="mt-5 rounded-xl bg-team-orange/15 p-3 text-team-orange">{error}</p>}
-        <button disabled={busy} className="mt-8 w-full rounded-2xl bg-team-green px-6 py-4 text-lg font-bold text-white disabled:opacity-50">
+        <button disabled={busy} className="btn-gold mt-8 w-full rounded-2xl px-6 py-4 text-lg">
           {busy ? "جارٍ الإنشاء…" : "إنشاء الغرفة"}
         </button>
       </form>

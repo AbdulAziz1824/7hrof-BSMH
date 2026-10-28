@@ -17,6 +17,7 @@ const MAP: Record<string, string> = {
 };
 export function arError(e: unknown): string {
   const m = (e as { message?: string })?.message ?? "";
+  if (/PGRST202|Could not find the function|schema cache/i.test(m)) return "قاعدة البيانات تحتاج تحديثًا: نفّذ ملف SQL الأخير (005_rect_board.sql) في Supabase.";
   for (const k of Object.keys(MAP)) if (m.includes(k)) return MAP[k];
   return "حدث خطأ غير متوقع. أعد المحاولة بعد قليل.";
 }

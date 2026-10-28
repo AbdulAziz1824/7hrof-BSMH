@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { arError } from "@/lib/errors";
-import { playClick, playWhoosh, playWin, fadeOutWin, stopWin } from "@/lib/sound";
+import { playClick, playWhoosh } from "@/lib/sound";
 
 export type GameRoom = {
   id: string; board_size: number; status: string; letters: string[]; owners: string[];
@@ -13,20 +13,21 @@ export type GameRoom = {
 type P = { user_id: string; name: string; team: "green" | "orange" | null; is_host: boolean };
 const TEAM: Record<string, string> = { green: "الأخضر", orange: "البرتقالي" };
 const G = "rgb(var(--green))", O = "rgb(var(--orange))", INK = "rgb(var(--ink))";
-const btn = "rounded-xl px-4 py-2.5 font-bold text-white transition active:scale-95";
-const WIN_REDIRECT_MS = 13000;   // بعد الفوز: يعمل الصوت ثم العودة للرئيسية
+const btn = "btn-gold rounded-xl px-4 py-2.5";
+const dot = (c: string) => <span className={`ms-2 inline-block h-3.5 w-3.5 rounded-full border-2 border-[#2B1F00]/60 align-middle ${c}`} />;
+const WIN_REDIRECT_MS = 13000;   // بعد الفوز: العودة للرئيسية
 const END_REDIRECT_MS = 3000;    // بعد إنهاء المنظم للجولة
 
-// هندسة الخلايا السداسية (قمة مسطحة): الإحداثيات المحورية q = العمود، r = الصف
+// هندسة الخلايا السداسية (قمة مسطحة) بلوحة مستطيلة ثابتة: الأعمدة الفردية تنزل نصف خلية
 const R = 34, HH = Math.sqrt(3) * R, PAD = 8, SHRINK = 0.94;
 const hexPts = (cx: number, cy: number) =>
   Array.from({ length: 6 }, (_, k) => {
     const a = (Math.PI / 3) * k;
     return `${(cx + R * SHRINK * Math.cos(a)).toFixed(1)},${(cy + R * SHRINK * Math.sin(a)).toFixed(1)}`;
   }).join(" ");
-const center = (r: number, c: number) => ({ x: 1.5 * R * c, y: HH * (r + c / 2) });
+const center = (r: number, c: number) => ({ x: 1.5 * R * c, y: HH * (r + (Math.abs(c) % 2 === 1 ? 0.5 : 0)) });
 
-export default function GameBoard({ room, players, me, onError }: { room: GameRoom; players: P[]; me: string; onError: (m: string) => void }) {
+export default function GameBoard({ room, players, me, onError, onRefresh }: { room: GameRoom; players: P[]; me: string; onError: (m: string) => void; onRefresh?: () => void }) {
   const router = useRouter();
   const n = room.board_size;
   const letters = room.letters ?? [], owners = room.owners ?? [];
@@ -38,14 +39,16 @@ export default function GameBoard({ room, players, me, onError }: { room: GameRo
 
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [left, setLeft] = useState(0);
+  const [err, setErr] = useState("");
   const sawLive = useRef(!finished);           // هل رأينا المباراة جارية أثناء وجودنا؟ (لا نعيد الصوت عند تحديث الصفحة)
   const celebrate = finished && sawLive.current;
   const ended = finished && !room.winner;
 
   async function call(fn: string, args: Record<string, unknown> = {}) {
-    onError("");
+    onError(""); setErr("");
     const { error } = await supabase.rpc(fn, { p_room: room.id, ...args });
-    if (error) onError(arError(error));
+    if (error) { const m = arError(error); onError(m); setErr(m); }
+    else onRefresh?.();   // لا ننتظر الاتصال المباشر: نجلب الحالة فورًا
     return !error;
   }
 
@@ -72,16 +75,14 @@ export default function GameBoard({ room, players, me, onError }: { room: GameRo
     return () => window.removeEventListener("keydown", h);
   }, []);
 
-  // ===== الفوز: صوت ثم عودة للرئيسية بعد 13 ثانية. إنهاء الجولة: عودة بعد 3 ثوانٍ =====
+  // ===== الفوز: عودة للرئيسية بعد 13 ثانية. إنهاء الجولة: عودة بعد 3 ثوانٍ =====
   useEffect(() => {
     if (!finished || !sawLive.current) return;
     const ms = ended ? END_REDIRECT_MS : WIN_REDIRECT_MS;
-    if (!ended) void playWin();
     setLeft(Math.round(ms / 1000));
     const tick = setInterval(() => setLeft((v) => Math.max(0, v - 1)), 1000);
-    const fade = !ended ? setTimeout(() => fadeOutWin(900), ms - 1000) : undefined;
     const go = setTimeout(() => router.push("/"), ms);
-    return () => { clearInterval(tick); clearTimeout(go); if (fade) clearTimeout(fade); stopWin(); };
+    return () => { clearInterval(tick); clearTimeout(go); };
   }, [finished, ended, router]);
   useEffect(() => { if (confirmEnd && finished) setConfirmEnd(false); }, [confirmEnd, finished]);
 
@@ -90,6 +91,7 @@ export default function GameBoard({ room, players, me, onError }: { room: GameRo
     const cells: { r: number; c: number; kind: "play" | "green" | "orange" }[] = [];
     for (let c = 0; c < n; c++) { cells.push({ r: -1, c, kind: "green" }, { r: n, c, kind: "green" }); }
     for (let r = 0; r < n; r++) { cells.push({ r, c: -1, kind: "orange" }, { r, c: n, kind: "orange" }); }
+    if (n % 2 === 0) cells.push({ r: n, c: n, kind: "orange" });   // العمود الأيمن غير منزاح: خلية إضافية لإكمال الحافة
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) cells.push({ r, c, kind: "play" });
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const { r, c } of cells) {
@@ -104,7 +106,7 @@ export default function GameBoard({ room, players, me, onError }: { room: GameRo
 
   return (
     <div className="mt-4">
-      <svg viewBox={geo.vb} role="img" aria-label="لوحة اللعب" className="mx-auto w-full max-w-lg" strokeLinejoin="round">
+      <svg viewBox={geo.vb} role="img" aria-label="لوحة اللعب" className="board mx-auto w-full max-w-md" strokeLinejoin="round">
         {geo.cells.filter((x) => x.kind !== "play").map(({ r, c, kind }) => {
           const { x, y } = center(r, c);
           return <polygon key={`e${r}_${c}`} points={hexPts(x, y)} fill={kind === "green" ? G : O} stroke={INK} strokeWidth="2.5" />;
@@ -158,7 +160,7 @@ export default function GameBoard({ room, players, me, onError }: { room: GameRo
               <button type="button" disabled={pressedUi}
                 onPointerDown={(e) => { if (e.pointerType === "mouse" && e.button !== 0) return; fire(); }}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fire(); } }}
-                className="buzz-btn mt-4 h-28 w-28 rounded-full bg-team-orange font-display text-3xl text-white shadow-lg shadow-team-orange/40 active:scale-90 disabled:opacity-70">
+                className="btn-gold buzz-btn mt-4 h-28 w-28 rounded-full font-display text-3xl">
                 {pressedUi ? "…" : "اضغط!"}
               </button>
             )}
@@ -167,7 +169,7 @@ export default function GameBoard({ room, players, me, onError }: { room: GameRo
           </>
         )}
         {finished && !celebrate && (
-          <Link href="/" className="mt-4 inline-block rounded-xl bg-ink px-5 py-2.5 font-medium text-paper">العودة للرئيسية</Link>
+          <Link href="/" className="btn-gold mt-4 inline-block rounded-xl px-5 py-2.5">العودة للرئيسية</Link>
         )}
       </div>
 
@@ -175,16 +177,18 @@ export default function GameBoard({ room, players, me, onError }: { room: GameRo
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {act !== null && (<>
             {buzzer && (<>
-              <button type="button" onClick={() => call("judge", { p_correct: true })} className={`${btn} bg-team-green`}>إجابة صحيحة</button>
-              <button type="button" onClick={() => call("judge", { p_correct: false })} className={`${btn} bg-ink text-paper`}>إجابة خاطئة</button>
+              <button type="button" onClick={() => call("judge", { p_correct: true })} className={btn}>إجابة صحيحة</button>
+              <button type="button" onClick={() => call("judge", { p_correct: false })} className={btn}>إجابة خاطئة</button>
             </>)}
-            <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "green" })} className={`${btn} bg-team-green/80`}>للأخضر</button>
-            <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "orange" })} className={`${btn} bg-team-orange/80`}>للبرتقالي</button>
-            <button type="button" onClick={() => call("skip_cell")} className={`${btn} bg-ink/60 text-paper`}>تخطي</button>
+            <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "green" })} className={btn}>للأخضر{dot("bg-team-green")}</button>
+            <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "orange" })} className={btn}>للبرتقالي{dot("bg-team-orange")}</button>
+            <button type="button" onClick={() => call("skip_cell")} className={btn}>تخطي</button>
           </>)}
-          <button type="button" onClick={() => setConfirmEnd(true)} className="rounded-xl border-2 border-ink/30 px-4 py-2.5 font-bold transition active:scale-95">إنهاء الجولة</button>
+          <button type="button" onClick={() => setConfirmEnd(true)} className={btn}>إنهاء الجولة</button>
         </div>
       )}
+
+      {err && <p role="alert" className="mt-3 rounded-xl bg-team-orange/15 p-3 text-center text-team-orange">{err}</p>}
 
       {confirmEnd && !finished && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-5" onClick={() => setConfirmEnd(false)}
@@ -194,9 +198,9 @@ export default function GameBoard({ room, players, me, onError }: { room: GameRo
             <h2 id="end-t" className="font-display text-2xl">إنهاء الجولة؟</h2>
             <p id="end-d" className="mt-2 leading-7 opacity-80">ستتوقف المباراة عند جميع اللاعبين ويعودون إلى الصفحة الرئيسية.</p>
             <div className="mt-5 flex gap-3">
-              <button type="button" autoFocus onClick={() => setConfirmEnd(false)} className="flex-1 rounded-xl border-2 border-ink/25 px-4 py-3 font-bold">إلغاء</button>
-              <button type="button" onClick={async () => { setConfirmEnd(false); await call("end_round"); }}
-                className="flex-1 rounded-xl bg-team-orange px-4 py-3 font-bold text-white">نعم، أنهِ الجولة</button>
+              <button type="button" autoFocus onClick={() => setConfirmEnd(false)} className="flex-1 rounded-xl border-2 border-[#D9A520] px-4 py-3 font-bold">إلغاء</button>
+              <button type="button" onClick={async () => { setConfirmEnd(false); const ok = await call("end_round"); if (ok) router.push("/"); }}
+                className="btn-gold flex-1 rounded-xl px-4 py-3">نعم، أنهِ الجولة</button>
             </div>
           </div>
         </div>

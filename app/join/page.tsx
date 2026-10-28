@@ -38,12 +38,14 @@ function JoinForm() {
         <div className="grid grid-cols-2 gap-3">
           {([["green", "الأخضر", "bg-team-green"], ["orange", "البرتقالي", "bg-team-orange"]] as const).map(([v, t, c]) => (
             <button key={v} type="button" aria-pressed={team === v} onClick={() => setTeam(v)}
-              className={`rounded-2xl py-4 text-lg font-bold text-white transition ${c} ${team === v ? "ring-4 ring-ink/40" : "opacity-45"}`}>{t}</button>
+              className={`btn-gold flex items-center justify-center gap-2 rounded-2xl py-4 text-lg ${team === v ? "btn-gold-on" : "opacity-60"}`}>
+              <span className={`inline-block h-4 w-4 rounded-full border-2 border-[#2B1F00]/60 ${c}`} />{t}
+            </button>
           ))}
         </div>
       </fieldset>
       {error && <p role="alert" className="mt-5 rounded-xl bg-team-orange/15 p-3 text-team-orange">{error}</p>}
-      <button disabled={busy} className="mt-8 w-full rounded-2xl bg-team-orange px-6 py-4 text-lg font-bold text-white disabled:opacity-50">
+      <button disabled={busy} className="btn-gold mt-8 w-full rounded-2xl px-6 py-4 text-lg">
         {busy ? "جارٍ الانضمام…" : "الانضمام إلى الغرفة"}
       </button>
     </form>

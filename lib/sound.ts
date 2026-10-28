@@ -1,6 +1,5 @@
-/** أصوات اللعبة: النقرة والنفحة مولّدة بالمتصفح (بدون ملفات)، وصوت الفوز ملف mp3. */
+/** أصوات اللعبة: النقرة والنفحة مولّدة بالمتصفح (بدون ملفات صوتية). */
 let ctx: AudioContext | null = null;
-let win: HTMLAudioElement | null = null;
 
 function ac(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -48,26 +47,4 @@ export function playWhoosh() {
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   n.connect(f).connect(g).connect(c.destination);
   n.start(t); n.stop(t + dur);
-}
-
-export function playWin(): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  win ??= new Audio("/sounds/win.mp3");
-  win.currentTime = 0;
-  return win.play().catch(() => undefined);   // قد يمنعه المتصفح إن لم يتفاعل المستخدم مع الصفحة
-}
-
-/** يخفض صوت الفوز تدريجيًا خلال المدة المحددة ثم يوقفه */
-export function fadeOutWin(ms = 1000) {
-  const a = win; if (!a) return;
-  const steps = 20, start = a.volume;
-  let i = 0;
-  const id = setInterval(() => {
-    i++; a.volume = Math.max(0, start * (1 - i / steps));
-    if (i >= steps) { clearInterval(id); a.pause(); a.currentTime = 0; a.volume = start; }
-  }, ms / steps);
-}
-
-export function stopWin() {
-  if (win) { win.pause(); win.currentTime = 0; win.volume = 1; }
 }

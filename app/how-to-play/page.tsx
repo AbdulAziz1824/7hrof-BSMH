@@ -56,7 +56,7 @@ export default function HowToPlay() {
       </div>
 
       <div className="rise mt-12 text-center" style={delay(200)}>
-        <Link href="/create" className="inline-block rounded-2xl bg-team-green px-8 py-4 text-lg font-bold text-white shadow-lg shadow-team-green/30 transition active:scale-95">جاهز؟ أنشئ غرفتك</Link>
+        <Link href="/create" className="btn-gold inline-block rounded-2xl px-8 py-4 text-lg">جاهز؟ أنشئ غرفتك</Link>
       </div>
     </Shell>
   );

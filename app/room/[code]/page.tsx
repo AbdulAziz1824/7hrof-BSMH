@@ -66,6 +66,12 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
     setStarting(false);
   }
 
+  async function refreshRoom() {
+    if (!room) return;
+    const { data } = await supabase.from("rooms").select("*").eq("id", room.id).single();
+    if (data) setRoom(data as Room);
+  }
+
   const link = `${origin}/join?code=${code}`;
   const col = (team: "green" | "orange", title: string, bg: string) => {
     const list = players.filter((p) => p.team === team);
@@ -89,7 +95,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
           <div className="rounded-2xl bg-surface p-5 text-center">
             <p className="opacity-70">رمز الغرفة</p>
             <p dir="ltr" className="font-display text-5xl tracking-[0.3em]">{room.code}</p>
-            <button type="button" className="mt-3 rounded-xl bg-ink px-5 py-2.5 font-medium text-paper"
+            <button type="button" className="btn-gold mt-3 rounded-xl px-5 py-2.5"
               onClick={async () => { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
               {copied ? "تم النسخ" : "نسخ رابط المشاركة"}
             </button>
@@ -111,7 +117,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
             isHost ? (
               <div className="mt-6">
                 <button type="button" onClick={start} disabled={starting || !hasBothTeams}
-                  className="w-full rounded-2xl bg-team-green px-6 py-4 text-lg font-bold text-white shadow-lg shadow-team-green/30 transition active:scale-95 disabled:opacity-50 disabled:shadow-none">
+                  className="btn-gold w-full rounded-2xl px-6 py-4 text-lg">
                   {starting ? "جارٍ البدء…" : "ابدأ المباراة"}
                 </button>
                 {!hasBothTeams && <p className="mt-2 text-center text-sm opacity-75">يلزم وجود لاعب واحد على الأقل في كل فريق للبدء.</p>}
@@ -120,7 +126,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
               <p role="status" className="mt-6 rounded-2xl bg-surface p-4 text-center opacity-80">بانتظار المنظم ليبدأ المباراة…</p>
             )
           ) : room.letters?.length ? (
-            <GameBoard room={room} players={players} me={me} onError={setError} />
+            <GameBoard room={room} players={players} me={me} onError={setError} onRefresh={refreshRoom} />
           ) : (
             <p role="status" className="mt-6 rounded-2xl bg-surface p-4 text-center">جارٍ تجهيز اللوحة…</p>
           )}
