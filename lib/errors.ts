@@ -8,6 +8,10 @@ const MAP: Record<string, string> = {
   not_host: "المنظم وحده يستطيع بدء المباراة.",
   already_started: "بدأت هذه المباراة بالفعل.",
   need_both_teams: "يلزم وجود لاعب واحد على الأقل في كل فريق للبدء.",
+  not_playing: "المباراة ليست جارية الآن.",
+  not_player: "أنت لا تلعب في أي فريق، فلا يمكنك الضغط.",
+  cell_taken: "هذه الخلية محسومة بالفعل.",
+  nothing_to_judge: "لا توجد إجابة للحكم عليها الآن.",
   room_full: "الغرفة ممتلئة (الحد الأقصى 40 لاعبًا).",
 };
 export function arError(e: unknown): string {

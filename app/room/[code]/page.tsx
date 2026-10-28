@@ -5,9 +5,9 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import Shell from "@/components/Shell";
 import { supabase, ensureSession } from "@/lib/supabase";
 import { arError } from "@/lib/errors";
-import { MiniBoard } from "@/components/Illustrations";
+import GameBoard, { type GameRoom } from "@/components/GameBoard";
 
-type Room = { id: string; code: string; board_size: number; total_rounds: number; mode: string; status: string };
+type Room = GameRoom & { code: string; total_rounds: number; mode: string };
 type Player = { id: string; user_id: string; name: string; team: "green" | "orange" | null; is_host: boolean };
 const MODES: Record<string, string> = { board_buzzer: "لوحة + أزرار سرعة", buzzer_only: "أزرار سرعة فقط", board_manual: "لوحة بتحكم يدوي" };
 
@@ -59,7 +59,10 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
     setStarting(true); setError("");
     const { error } = await supabase.rpc("start_game", { p_room: room.id });
     if (error) setError(arError(error));
-    else setRoom({ ...room, status: "playing" });
+    else {
+      const { data } = await supabase.from("rooms").select("*").eq("id", room.id).single();
+      if (data) setRoom(data as Room);
+    }
     setStarting(false);
   }
 
@@ -79,7 +82,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
   const spectators = players.filter((p) => !p.team);
 
   return (
-    <Shell title="غرفة الانتظار">
+    <Shell title={!room || room.status === "waiting" ? "غرفة الانتظار" : "المباراة"}>
       {error && <p role="alert" className="rounded-xl bg-team-orange/15 p-3 text-team-orange">{error}</p>}
       {room && (
         <>
@@ -97,7 +100,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
           <p role="status" className={`mt-2 text-sm ${live ? "text-team-green" : "text-team-orange"}`}>
             {live ? "متصل مباشرة" : "جارٍ إعادة الاتصال…"}
           </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${room.status === "waiting" ? "" : "hidden"}`}>
             {col("green", "الفريق الأخضر", "bg-team-green")}
             {col("orange", "الفريق البرتقالي", "bg-team-orange")}
           </div>
@@ -116,12 +119,10 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
             ) : (
               <p role="status" className="mt-6 rounded-2xl bg-surface p-4 text-center opacity-80">بانتظار المنظم ليبدأ المباراة…</p>
             )
+          ) : room.letters?.length ? (
+            <GameBoard room={room} players={players} me={me} onError={setError} />
           ) : (
-            <div className="rise mt-6 flex flex-col items-center rounded-2xl bg-surface p-6 text-center">
-              <h2 className="font-display text-3xl">انطلقت المباراة!</h2>
-              <p className="mt-2 opacity-75">لوحة اللعب قيد التجهيز، وتصل في التحديث القادم.</p>
-              <div className="mt-4 flex w-full justify-center"><MiniBoard map={["....", "....", "....", "...."]} /></div>
-            </div>
+            <p role="status" className="mt-6 rounded-2xl bg-surface p-4 text-center">جارٍ تجهيز اللوحة…</p>
           )}
         </>
       )}
