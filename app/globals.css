@@ -4,10 +4,10 @@
 
 :root {
   --ink: 15 29 46; --paper: 242 245 248; --surface: 255 255 255;
-  --green: 23 163 74; --orange: 245 130 32;
+  --green: 23 163 74; --orange: 245 130 32; --cell: 255 247 224;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --ink: 234 240 246; --paper: 10 18 28; --surface: 18 32 51; --green: 52 199 110; --orange: 255 156 66; }
+  :root { --ink: 234 240 246; --paper: 10 18 28; --surface: 18 32 51; --green: 52 199 110; --orange: 255 156 66; --cell: 40 62 94; }
 }
 html { background: rgb(var(--paper)); color: rgb(var(--ink)); }
 body { font-family: var(--font-body), sans-serif; min-height: 100vh; }
@@ -25,3 +25,7 @@ html { scroll-behavior: smooth; }
 .lift { transition: transform .3s cubic-bezier(.22, 1, .36, 1), box-shadow .3s; }
 .lift:hover { transform: translateY(-5px); box-shadow: 0 16px 32px -14px rgb(var(--ink) / .3); }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+.hexc.open:hover polygon { fill: rgb(var(--orange) / .35); }
+.hexc.open:focus-visible { outline: none; }
+.hexc.open:focus-visible polygon { stroke: rgb(var(--orange)); stroke-width: 5; }
+.buzz-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }

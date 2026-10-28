@@ -67,6 +67,7 @@ export default function Home() {
       <footer className="mt-14 flex flex-wrap items-center gap-5 text-sm opacity-70">
         <Link href="/contact" className="transition hover:opacity-100 hover:underline">تواصل معنا</Link>
         <span>© 7ROF BSMH</span>
+        <span className="ms-auto">جميع الحقوق محفوظة لمؤسسة بصمة خير الوقفية</span>
       </footer>
     </main>
   );
