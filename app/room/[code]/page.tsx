@@ -5,6 +5,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import Shell from "@/components/Shell";
 import { supabase, ensureSession } from "@/lib/supabase";
 import { arError } from "@/lib/errors";
+import { MiniBoard } from "@/components/Illustrations";
 
 type Room = { id: string; code: string; board_size: number; total_rounds: number; mode: string; status: string };
 type Player = { id: string; user_id: string; name: string; team: "green" | "orange" | null; is_host: boolean };
@@ -20,6 +21,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
   const [error, setError] = useState("");
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
+  const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     setOrigin(location.origin);
@@ -48,6 +50,18 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
     })();
     return () => { cancelled = true; if (ch) supabase.removeChannel(ch); };
   }, [code, router]);
+
+  const isHost = players.some((p) => p.user_id === me && p.is_host);
+  const hasBothTeams = players.some((p) => p.team === "green") && players.some((p) => p.team === "orange");
+
+  async function start() {
+    if (!room) return;
+    setStarting(true); setError("");
+    const { error } = await supabase.rpc("start_game", { p_room: room.id });
+    if (error) setError(arError(error));
+    else setRoom({ ...room, status: "playing" });
+    setStarting(false);
+  }
 
   const link = `${origin}/join?code=${code}`;
   const col = (team: "green" | "orange", title: string, bg: string) => {
@@ -89,6 +103,25 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
           </div>
           {spectators.length > 0 && (
             <p className="mt-4 text-sm opacity-75">المنظم (لا يلعب): {spectators.map((p) => p.name).join("، ")}</p>
+          )}
+          {room.status === "waiting" ? (
+            isHost ? (
+              <div className="mt-6">
+                <button type="button" onClick={start} disabled={starting || !hasBothTeams}
+                  className="w-full rounded-2xl bg-team-green px-6 py-4 text-lg font-bold text-white shadow-lg shadow-team-green/30 transition active:scale-95 disabled:opacity-50 disabled:shadow-none">
+                  {starting ? "جارٍ البدء…" : "ابدأ المباراة"}
+                </button>
+                {!hasBothTeams && <p className="mt-2 text-center text-sm opacity-75">يلزم وجود لاعب واحد على الأقل في كل فريق للبدء.</p>}
+              </div>
+            ) : (
+              <p role="status" className="mt-6 rounded-2xl bg-surface p-4 text-center opacity-80">بانتظار المنظم ليبدأ المباراة…</p>
+            )
+          ) : (
+            <div className="rise mt-6 flex flex-col items-center rounded-2xl bg-surface p-6 text-center">
+              <h2 className="font-display text-3xl">انطلقت المباراة!</h2>
+              <p className="mt-2 opacity-75">لوحة اللعب قيد التجهيز، وتصل في التحديث القادم.</p>
+              <div className="mt-4 flex w-full justify-center"><MiniBoard map={["....", "....", "....", "...."]} /></div>
+            </div>
           )}
         </>
       )}
