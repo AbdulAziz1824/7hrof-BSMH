@@ -42,12 +42,12 @@ export default function CreateRoom() {
         <Seg label="حجم اللوحة" value={size} onChange={setSize} options={[[3, "3×3"], [4, "4×4"], [5, "5×5"]]} />
         <Seg label="عدد الجولات" value={rounds} onChange={setRounds} options={[[1, "جولة"], [2, "جولتان"], [3, "ثلاث جولات"]]} />
         <Seg label="نمط اللعب" value={mode} onChange={setMode} options={[
-          ["board_buzzer", "لوحة + أزرار سرعة"], ["buzzer_only", "أزرار سرعة فقط"], ["board_manual", "لوحة بتحكم يدوي"]]} />
+          ["board_buzzer", "لوحة + أزرار سرعة"], ["board_manual", "لوحة بتحكم يدوي"]]} />
         {canPlay && <Seg label="دور المنظم" value={plays ? "play" : "host"} onChange={(v) => setPlays(v === "play")}
           options={[["host", "إدارة فقط"], ["play", "إدارة ولعب"]]} />}
         {canPlay && plays && <Seg label="فريقك" value={team} onChange={setTeam} options={[["green", "الأخضر"], ["orange", "البرتقالي"]]} />}
         {error && <p role="alert" className="mt-5 rounded-xl bg-team-orange/15 p-3 text-team-orange">{error}</p>}
-        <button disabled={busy} className="btn-gold mt-8 w-full rounded-2xl px-6 py-4 text-lg">
+        <button disabled={busy} className="btn-green mt-8 w-full rounded-2xl px-6 py-4 text-lg">
           {busy ? "جارٍ الإنشاء…" : "إنشاء الغرفة"}
         </button>
       </form>

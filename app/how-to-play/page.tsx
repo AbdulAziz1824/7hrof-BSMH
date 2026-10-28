@@ -17,8 +17,7 @@ const STEPS = [
 ];
 
 const MODES = [
-  ["لوحة + أزرار سرعة", "اللوحة تظهر للجميع، وجوالات اللاعبين تتحول إلى أزرار سرعة."],
-  ["أزرار سرعة فقط", "اللاعبون يرون زر السرعة فقط بدون اللوحة، والمنظم يدير اللوحة ويحكم على الإجابات."],
+  ["لوحة + أزرار سرعة", "اللوحة تظهر للمنظم فقط، وجوالات اللاعبين تتحول إلى أزرار سرعة مع مؤقت لكل سؤال."],
   ["لوحة بتحكم يدوي", "لوحة فقط بدون لاعبين: المنظم يديرها بنفسه ويحدد من يكسب كل خلية، ومن ينضم يشاهد."],
 ];
 
@@ -46,7 +45,7 @@ export default function HowToPlay() {
       </ol>
 
       <h2 className="rise mt-14 font-display text-3xl" style={delay(100)}>أنماط اللعب</h2>
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
         {MODES.map(([t, x], i) => (
           <div key={t} className="rise lift rounded-2xl bg-surface p-6" style={delay(150 + i * 120)}>
             <h3 className="font-display text-2xl">{t}</h3>
@@ -56,7 +55,7 @@ export default function HowToPlay() {
       </div>
 
       <div className="rise mt-12 text-center" style={delay(200)}>
-        <Link href="/create" className="btn-gold inline-block rounded-2xl px-8 py-4 text-lg">جاهز؟ أنشئ غرفتك</Link>
+        <Link href="/create" className="btn-green inline-block rounded-2xl px-8 py-4 text-lg">جاهز؟ أنشئ غرفتك</Link>
       </div>
     </Shell>
   );

@@ -45,8 +45,8 @@ export default function Home() {
             لعبة حروف جماعية بين فريقين: أجب أولًا، اكسب الخلية، وصِل بين أطراف اللوحة قبل خصمك.
           </p>
           <div className="rise mx-auto mt-6 flex max-w-sm flex-col gap-3 sm:max-w-none sm:flex-row md:mt-8" style={delay(400)}>
-            <Link href="/create" className="btn-gold rounded-2xl px-7 py-4 text-center text-lg sm:flex-1 md:flex-none">إنشاء غرفة</Link>
-            <Link href="/join" className="btn-gold rounded-2xl px-7 py-4 text-center text-lg sm:flex-1 md:flex-none">الانضمام إلى غرفة</Link>
+            <Link href="/create" className="btn-green rounded-2xl px-7 py-4 text-center text-lg sm:flex-1 md:flex-none">إنشاء غرفة</Link>
+            <Link href="/join" className="btn-green rounded-2xl px-7 py-4 text-center text-lg sm:flex-1 md:flex-none">الانضمام إلى غرفة</Link>
           </div>
         </div>
 

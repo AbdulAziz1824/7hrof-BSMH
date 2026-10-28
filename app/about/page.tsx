@@ -30,8 +30,8 @@ export default function About() {
       </div>
 
       <div className="rise mt-10 flex flex-wrap gap-3" style={delay(850)}>
-        <Link href="/how-to-play" className="btn-gold rounded-2xl px-6 py-3.5">طريقة اللعب</Link>
-        <Link href="/create" className="btn-gold rounded-2xl px-6 py-3.5">إنشاء غرفة</Link>
+        <Link href="/how-to-play" className="btn-green rounded-2xl px-6 py-3.5">طريقة اللعب</Link>
+        <Link href="/create" className="btn-green rounded-2xl px-6 py-3.5">إنشاء غرفة</Link>
       </div>
     </Shell>
   );

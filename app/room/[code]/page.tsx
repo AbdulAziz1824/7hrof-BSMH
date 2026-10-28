@@ -4,13 +4,15 @@ import { useRouter } from "next/navigation";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { QRCodeSVG } from "qrcode.react";
 import Shell from "@/components/Shell";
+import Seg from "@/components/Seg";
 import { supabase, ensureSession } from "@/lib/supabase";
 import { arError } from "@/lib/errors";
 import GameBoard, { type GameRoom } from "@/components/GameBoard";
 
-type Room = GameRoom & { code: string; total_rounds: number; mode: string };
+type Room = GameRoom & { code: string; total_rounds: number; mode: string; timer_seconds: number };
 type Player = { id: string; user_id: string; name: string; team: "green" | "orange" | null; is_host: boolean };
-const MODES: Record<string, string> = { board_buzzer: "لوحة + أزرار سرعة", buzzer_only: "أزرار سرعة فقط", board_manual: "لوحة بتحكم يدوي" };
+const MODES: Record<string, string> = { board_buzzer: "لوحة + أزرار سرعة", buzzer_only: "لوحة + أزرار سرعة", board_manual: "لوحة بتحكم يدوي" };
+const timerLabel = (s: number) => (s === 0 ? "بدون وقت" : s === 10 ? "10 ثوانٍ" : `${s} ثانية`);
 
 export default function WaitingRoom({ params }: { params: { code: string } }) {
   const code = params.code.toUpperCase();
@@ -68,6 +70,13 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
     setStarting(false);
   }
 
+  async function setTimer(v: number) {
+    if (!room) return;
+    setError("");
+    const { error } = await supabase.rpc("set_timer", { p_room: room.id, p_seconds: v });
+    if (error) setError(arError(error)); else await refreshRoom();
+  }
+
   async function refreshRoom() {
     if (!room) return;
     const { data } = await supabase.from("rooms").select("*").eq("id", room.id).single();
@@ -98,7 +107,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
           <div className="rounded-2xl bg-surface p-5 text-center">
             <p className="opacity-70">رمز الغرفة</p>
             <p dir="ltr" className="font-display text-5xl tracking-[0.3em]">{room.code}</p>
-            <button type="button" className="btn-gold mt-3 rounded-xl px-5 py-2.5"
+            <button type="button" className="btn-green mt-3 rounded-xl px-5 py-2.5"
               onClick={async () => { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
               {copied ? "تم النسخ" : "نسخ رابط المشاركة"}
             </button>
@@ -112,7 +121,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
             )}
           </div>
           <p className="mt-4 text-sm opacity-75">
-            {room.board_size}×{room.board_size} · {room.total_rounds} {room.total_rounds === 1 ? "جولة" : "جولات"} · {MODES[room.mode]}
+            {room.board_size}×{room.board_size} · {room.total_rounds} {room.total_rounds === 1 ? "جولة" : "جولات"} · {MODES[room.mode]} · المؤقت: {timerLabel(room.timer_seconds ?? 0)}
           </p>
           <p role="status" className={`mt-2 text-sm ${live ? "text-team-green" : "text-team-orange"}`}>
             {live ? "متصل مباشرة" : "جارٍ إعادة الاتصال…"}
@@ -133,8 +142,10 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
           {room.status === "waiting" ? (
             isHost ? (
               <div className="mt-6">
+                <Seg label="مؤقت السؤال" value={room.timer_seconds ?? 10} onChange={setTimer}
+                  options={[[10, "10 ثوانٍ"], [20, "20 ثانية"], [30, "30 ثانية"], [0, "بدون وقت"]]} />
                 <button type="button" onClick={start} disabled={starting || !hasBothTeams}
-                  className="btn-gold w-full rounded-2xl px-6 py-4 text-lg">
+                  className="btn-green w-full rounded-2xl px-6 py-4 text-lg">
                   {starting ? "جارٍ البدء…" : "ابدأ المباراة"}
                 </button>
                 {!hasBothTeams && <p className="mt-2 text-center text-sm opacity-75">يلزم وجود لاعب واحد على الأقل في كل فريق للبدء.</p>}
