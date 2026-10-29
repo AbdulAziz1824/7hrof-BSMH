@@ -19,7 +19,11 @@ const MAP: Record<string, string> = {
 };
 export function arError(e: unknown): string {
   const m = (e as { message?: string })?.message ?? "";
-  if (/PGRST202|Could not find the function|schema cache/i.test(m)) return "قاعدة البيانات تحتاج تحديثًا: نفّذ ملف SQL الأخير (005_rect_board.sql) في Supabase.";
+  if (/PGRST20[0-9]|Could not find|schema cache|does not exist/i.test(m)) {
+    const f = m.match(/function\s+(?:public\.)?(\w+)/i)?.[1] ?? m.match(/'(\w+)'\s+column/i)?.[1] ?? m.match(/column\s+\w*\.?(\w+)/i)?.[1] ?? "";
+    const file = /end_round|hex_connected/.test(f) ? "005" : /timer|server_now|question_ends/.test(f) ? "006" : /leave_room|wins|last_round/.test(f) ? "007" : /close_room/.test(f) ? "008" : "";
+    return `قاعدة البيانات تحتاج تحديثًا${f ? ` (${f})` : ""}: نفّذ الملف الشامل supabase/ALL_UPDATES.sql في Supabase SQL Editor${file ? ` (يشمل ${file})` : ""} ثم أعد المحاولة.`;
+  }
   for (const k of Object.keys(MAP)) if (m.includes(k)) return MAP[k];
   return "حدث خطأ غير متوقع. أعد المحاولة بعد قليل.";
 }

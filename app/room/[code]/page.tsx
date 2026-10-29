@@ -75,6 +75,20 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
     return () => clearInterval(id);
   }, [roomId, roomDone]);
 
+  // ===== حضور المنظم: إن أغلق صفحته أو انقطع (بعد مهلة 3 ثوانٍ لتحديث الصفحة) تُغلق الغرفة عند الباقين =====
+  useEffect(() => {
+    if (!roomId || !me || roomDone) return;
+    const ch = supabase.channel(`host-presence:${roomId}`, { config: { presence: { key: me } } });
+    let seen = false, timer: ReturnType<typeof setTimeout> | undefined;
+    ch.on("presence", { event: "sync" }, () => {
+      if (isHost) return;
+      const present = Object.values(ch.presenceState()).some((arr) => (arr as { host?: boolean }[]).some((x) => x.host));
+      if (present) { seen = true; if (timer) { clearTimeout(timer); timer = undefined; } }
+      else if (seen && !timer) timer = setTimeout(() => router.replace("/"), 3000);
+    }).subscribe((st) => { if (st === "SUBSCRIBED" && isHost) void ch.track({ host: true }); });
+    return () => { if (timer) clearTimeout(timer); supabase.removeChannel(ch); };
+  }, [roomId, me, isHost, roomDone, router]);
+
   // اللوحة اليدوية: تبدأ مباشرة بدون غرفة انتظار
   const autoStarted = useRef(false);
   useEffect(() => {
@@ -83,7 +97,10 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
 
   async function leave() {
     setLeaving(true);
-    if (room && !isHost) await supabase.rpc("leave_room", { p_room: room.id });
+    if (room) {
+      if (isHost) await supabase.rpc("close_room", { p_room: room.id });   // خروج المنظم يغلق الغرفة عند الجميع
+      else await supabase.rpc("leave_room", { p_room: room.id });
+    }
     router.push("/");
   }
 
@@ -191,7 +208,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
           <div className="mt-8 border-t border-ink/10 pt-5 text-center">
             {confirmLeave ? (
               <div>
-                <p className="mb-3 opacity-80">{isHost ? "ستخرج من الصفحة وتبقى الغرفة مفتوحة، وتقدر تعود إليها برابطها." : "هل تريد الخروج من الغرفة؟"}</p>
+                <p className="mb-3 opacity-80">{isHost ? "سيتم إغلاق الغرفة وإرجاع جميع اللاعبين للصفحة الرئيسية فورًا." : "هل تريد الخروج من الغرفة؟"}</p>
                 <div className="flex justify-center gap-3">
                   <button type="button" onClick={leave} disabled={leaving} className="btn-green rounded-xl px-6 py-2.5">{leaving ? "جارٍ الخروج…" : "نعم، خروج"}</button>
                   <button type="button" onClick={() => setConfirmLeave(false)} className="rounded-xl border-2 border-team-green px-6 py-2.5 font-bold">إلغاء</button>

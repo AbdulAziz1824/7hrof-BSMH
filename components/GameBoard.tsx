@@ -59,11 +59,9 @@ export default function GameBoard({ room, players, me, onError, onRefresh, mode 
   const timed = act !== null && !finished && !room.buzz_user && endsAt !== null;
   const remain = timed ? Math.max(0, Math.ceil((endsAt! - (now + offset.current)) / 1000)) : null;
   const expired = remain === 0;
-  const [timerOpen, setTimerOpen] = useState(false);
 
   const canBuzz = !manual && !!myTeam && !finished && !expired && act !== null && !room.buzz_user && room.locked_team !== myTeam;
 
-  const [confirmEnd, setConfirmEnd] = useState(false);
   const [left, setLeft] = useState(0);
   const [err, setErr] = useState("");
   const sawLive = useRef(!finished);           // هل رأينا المباراة جارية أثناء وجودنا؟ (لا نعيد الصوت عند تحديث الصفحة)
@@ -122,7 +120,6 @@ export default function GameBoard({ room, players, me, onError, onRefresh, mode 
       return () => clearTimeout(t);
     }
   }, [round, room.last_round_winner]);
-  useEffect(() => { if (confirmEnd && finished) setConfirmEnd(false); }, [confirmEnd, finished]);
 
   // ===== اللوحة =====
   const geo = useMemo(() => {
@@ -226,52 +223,15 @@ export default function GameBoard({ room, players, me, onError, onRefresh, mode 
         )}
       </div>
 
-      {isHost && !finished && (
+      {isHost && !finished && act !== null && (
         <div className="mt-3 flex flex-wrap justify-center gap-2">
-          {act !== null && (<>
-            {!manual && buzzer && (<>
-              <button type="button" onClick={() => call("judge", { p_correct: true })} className={btn}>إجابة صحيحة</button>
-              <button type="button" onClick={() => call("judge", { p_correct: false })} className={btn}>إجابة خاطئة</button>
-            </>)}
-            <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "green" })} className={btn}>للأخضر{dot("bg-team-green")}</button>
-            <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "orange" })} className={btn}>للبرتقالي{dot("bg-team-orange")}</button>
-            {manual && <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "" })} className={btn}>تفريغ الخلية</button>}
-            {!manual && <button type="button" onClick={() => setTimerOpen((v) => !v)} className={btn} aria-expanded={timerOpen}>ضبط الوقت</button>}
-            <button type="button" onClick={() => call("skip_cell")} className={btn}>تخطي</button>
-          </>)}
-          <button type="button" onClick={() => setConfirmEnd(true)} className={btn}>إنهاء الجولة</button>
-        </div>
-      )}
-
-      {isHost && !finished && act !== null && timerOpen && (
-        <div className="mt-3 rounded-2xl bg-surface p-4 text-center">
-          <p className="mb-3 text-sm opacity-75">اختر الوقت وسيبدأ العدّ من جديد لهذا السؤال وما بعده:</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {([[5, "5 ثوانٍ"], [10, "10 ثوانٍ"], [15, "15 ثانية"], [20, "20 ثانية"], [30, "30 ثانية"], [0, "بدون وقت"]] as const).map(([v, t]) => (
-              <button key={v} type="button" onClick={async () => { if (await call("set_timer", { p_seconds: v })) setTimerOpen(false); }}
-                className={`${btn} ${room.timer_seconds === v ? "btn-green-on" : "opacity-80"}`}>{t}</button>
-            ))}
-          </div>
+          <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "green" })} className={btn}>للأخضر{dot("bg-team-green")}</button>
+          <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "orange" })} className={btn}>للبرتقالي{dot("bg-team-orange")}</button>
+          <button type="button" onClick={() => call("skip_cell")} className={btn}>تخطي</button>
         </div>
       )}
 
       {err && <p role="alert" className="mt-3 rounded-xl bg-team-orange/15 p-3 text-center text-team-orange">{err}</p>}
-
-      {confirmEnd && !finished && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-5" onClick={() => setConfirmEnd(false)}
-          onKeyDown={(e) => { if (e.key === "Escape") setConfirmEnd(false); }}>
-          <div role="alertdialog" aria-modal="true" aria-labelledby="end-t" aria-describedby="end-d"
-            className="page-in w-full max-w-sm rounded-3xl bg-surface p-6 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 id="end-t" className="font-display text-2xl">إنهاء الجولة؟</h2>
-            <p id="end-d" className="mt-2 leading-7 opacity-80">ستتوقف المباراة عند جميع اللاعبين ويعودون إلى الصفحة الرئيسية.</p>
-            <div className="mt-5 flex gap-3">
-              <button type="button" autoFocus onClick={() => setConfirmEnd(false)} className="flex-1 rounded-xl border-2 border-team-green px-4 py-3 font-bold">إلغاء</button>
-              <button type="button" onClick={async () => { setConfirmEnd(false); const ok = await call("end_round"); if (ok) router.push("/"); }}
-                className="btn-green flex-1 rounded-xl px-4 py-3">نعم، أنهِ الجولة</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
