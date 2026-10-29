@@ -210,7 +210,7 @@ export default function GameBoard({ room, players, me, onError, onRefresh, mode 
               <button type="button" disabled={pressedUi || expired}
                 onPointerDown={(e) => { if (e.pointerType === "mouse" && e.button !== 0) return; fire(); }}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fire(); } }}
-                className="btn-green buzz-btn mt-4 h-28 w-28 rounded-full font-display text-3xl">
+                className={`buzz-btn mt-4 h-28 w-28 rounded-full font-display text-3xl text-white shadow-lg transition active:scale-90 disabled:opacity-60 ${myTeam === "orange" ? "bg-team-orange shadow-team-orange/40" : "bg-team-green shadow-team-green/40"}`}>
                 {expired ? "انتهى" : pressedUi ? "…" : "اضغط!"}
               </button>
             )}

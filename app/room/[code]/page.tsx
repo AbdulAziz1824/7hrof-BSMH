@@ -146,7 +146,7 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
   const viewers = manual ? spectators.filter((p) => !p.is_host) : [];
 
   return (
-    <Shell title={!room || room.status === "waiting" ? "غرفة الانتظار" : "المباراة"}>
+    <Shell back={false} title={!room || room.status === "waiting" ? "غرفة الانتظار" : "المباراة"}>
       {error && <p role="alert" className="rounded-xl bg-team-orange/15 p-3 text-team-orange">{error}</p>}
       {room && (
         <>
