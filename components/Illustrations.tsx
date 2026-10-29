@@ -4,23 +4,35 @@ const G = "rgb(var(--green))", O = "rgb(var(--orange))", INK = "rgb(var(--ink))"
 const FONT = "var(--font-display), sans-serif";
 const LETTERS = ["ابتث", "جحخد", "رسشص", "طعغف"];
 
-/** لوحة حروف مصغّرة. g = أخضر، o = برتقالي، . = خلية فارغة */
+/** لوحة حروف مصغّرة بنفس شكل لوحة اللعب (مستطيلة، أعمدة فردية تنزل نصف خلية). g = أخضر، o = برتقالي، . = فارغة */
+const R = 34, HH = Math.sqrt(3) * R;
+const ctr = (r: number, c: number) => ({ x: 1.5 * R * c, y: HH * (r + (Math.abs(c) % 2 === 1 ? 0.5 : 0)) });
+const hex = (cx: number, cy: number) =>
+  Array.from({ length: 6 }, (_, k) => `${(cx + R * 0.94 * Math.cos((Math.PI / 3) * k)).toFixed(1)},${(cy + R * 0.94 * Math.sin((Math.PI / 3) * k)).toFixed(1)}`).join(" ");
+
 export function MiniBoard({ map, glowCells = [] }: { map: string[]; glowCells?: string[] }) {
-  const w = 60, h = 66, s = 63, dy = 55;
-  const pts = [[.25, .04], [.75, .04], [1, .5], [.75, .96], [.25, .96], [0, .5]].map(([x, y]) => `${x * w},${y * h}`).join(" ");
+  const n = map.length;
+  const cells: { r: number; c: number; k: "g" | "o" | "p" }[] = [];
+  for (let c = 0; c < n; c++) cells.push({ r: -1, c, k: "g" }, { r: n, c, k: "g" });
+  for (let r = 0; r < n; r++) cells.push({ r, c: -1, k: "o" }, { r, c: n, k: "o" });
+  if (n % 2 === 0) cells.push({ r: n, c: n, k: "o" });
+  map.forEach((row, r) => [...row].forEach((_, c) => cells.push({ r, c, k: "p" })));
+  const xs = cells.flatMap(({ r, c }) => [ctr(r, c).x - R, ctr(r, c).x + R]), ys = cells.flatMap(({ r, c }) => [ctr(r, c).y - HH / 2, ctr(r, c).y + HH / 2]);
+  const x0 = Math.min(...xs) - 6, y0 = Math.min(...ys) - 6;
   return (
-    <svg viewBox="0 0 350 245" role="img" aria-label="لوحة حروف بخلايا سداسية ملونة" className="w-full max-w-sm">
-      {map.map((row, r) => [...row].map((t, c) => {
-        const fill = t === "g" ? G : t === "o" ? O : "rgb(var(--ink) / 0.12)";
+    <svg viewBox={`${x0} ${y0} ${Math.max(...xs) + 6 - x0} ${Math.max(...ys) + 6 - y0}`} role="img" aria-label="لوحة حروف بخلايا سداسية ملونة" className="w-full max-w-xs" strokeLinejoin="round">
+      {cells.map(({ r, c, k }, i) => {
+        const { x, y } = ctr(r, c);
+        const t = k === "p" ? map[r][c] : k === "g" ? "g" : "o";
+        const fill = t === "g" ? G : t === "o" ? O : "rgb(var(--cell))";
+        const glow = k === "p" && glowCells.includes(`${r}${c}`);
         return (
-          <g key={`${r}-${c}`} transform={`translate(${6 + c * s + r * 29} ${6 + r * dy})`}>
-            <g className={`pop svg-pop ${glowCells.includes(`${r}${c}`) ? "glow" : ""}`} style={delay((r * 4 + c) * 50)}>
-              <polygon points={pts} fill={fill} />
-              <text x={w / 2} y={h / 2 + 9} textAnchor="middle" fontSize="26" fill={t === "." ? INK : "#fff"} fontFamily={FONT}>{LETTERS[r][c]}</text>
-            </g>
+          <g key={i} className={`pop svg-pop ${glow ? "glow" : ""}`} style={delay(k === "p" ? (r * 4 + c) * 50 : 0)}>
+            <polygon points={hex(x, y)} fill={fill} stroke={INK} strokeWidth={glow ? 4 : 2.5} />
+            {k === "p" && <text x={x} y={y + 10} textAnchor="middle" fontSize="28" fill={t === "." ? INK : "#fff"} fontFamily={FONT}>{LETTERS[r][c]}</text>}
           </g>
         );
-      }))}
+      })}
     </svg>
   );
 }

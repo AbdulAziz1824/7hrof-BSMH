@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
-import InstallBar from "@/components/InstallBar";
+import InstallLink from "@/components/InstallLink";
+import { VERSION } from "@/lib/version";
 import { delay } from "@/lib/anim";
 
 // لوحة العرض: نفس هندسة لوحة اللعب (مستطيلة، أعمدة فردية تنزل نصف خلية)
@@ -29,12 +30,12 @@ const FEATURES = [
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 sm:px-6">
-      <InstallBar />
       <header className="flex items-center justify-between gap-3 py-4 sm:py-6">
         <Logo size={34} />
         <nav className="flex gap-1 text-sm font-medium sm:gap-3">
           <Link href="/how-to-play" className="rounded-lg px-2.5 py-2 transition hover:text-team-orange">طريقة اللعب</Link>
           <Link href="/about" className="rounded-lg px-2.5 py-2 transition hover:text-team-orange">عن الموقع</Link>
+          <InstallLink />
         </nav>
       </header>
 
@@ -76,9 +77,10 @@ export default function Home() {
         ))}
       </section>
 
-      <footer className="mt-auto flex flex-col items-center gap-3 pb-4 pt-10 text-sm opacity-75 sm:flex-row sm:gap-5">
-        <Link href="/contact" className="py-1 transition hover:opacity-100 hover:underline">تواصل معنا</Link>
-        <span className="sm:ms-auto">جميع الحقوق محفوظة لمؤسسة بصمة خير الوقفية</span>
+      <footer className="mt-auto grid gap-2 pb-5 pt-10 text-center text-sm opacity-75 sm:grid-cols-3 sm:items-center">
+        <Link href="/contact" className="py-1 transition hover:opacity-100 hover:underline sm:justify-self-start">تواصل معنا</Link>
+        <span dir="ltr" className="text-xs opacity-80">{VERSION}</span>
+        <span className="sm:justify-self-end">جميع الحقوق محفوظة لمؤسسة بصمة خير الوقفية</span>
       </footer>
     </main>
   );

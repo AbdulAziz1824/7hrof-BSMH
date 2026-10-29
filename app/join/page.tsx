@@ -8,7 +8,7 @@ import { arError } from "@/lib/errors";
 function JoinForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const [code, setCode] = useState((params.get("code") ?? "").toUpperCase());
+  const [code, setCode] = useState((params.get("code") ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5));
   const [name, setName] = useState("");
   const [team, setTeam] = useState<"green" | "orange">("green");
   const [busy, setBusy] = useState(false);
@@ -29,7 +29,7 @@ function JoinForm() {
   return (
     <form onSubmit={submit}>
       <label className="block font-medium" htmlFor="code">رمز الغرفة</label>
-      <input id="code" required maxLength={5} dir="ltr" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
+      <input id="code" required maxLength={5} dir="ltr" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
         className={`${input} text-center font-display text-3xl tracking-[0.3em]`} autoComplete="off" />
       <label className="mt-5 block font-medium" htmlFor="pname">اسمك</label>
       <input id="pname" required maxLength={24} value={name} onChange={(e) => setName(e.target.value)} className={input} />
