@@ -10,6 +10,7 @@ export type GameRoom = {
   id: string; board_size: number; status: string; letters: string[]; owners: string[];
   active_cell: number | null; buzz_user: string | null; buzz_team: string | null; locked_team: string | null; winner: string | null;
   timer_seconds?: number; question_ends_at?: string | null;
+  current_round?: number; total_rounds?: number; green_wins?: number; orange_wins?: number; last_round_winner?: string | null;
 };
 type P = { user_id: string; name: string; team: "green" | "orange" | null; is_host: boolean };
 const TEAM: Record<string, string> = { green: "الأخضر", orange: "البرتقالي" };
@@ -17,7 +18,6 @@ const G = "rgb(var(--green))", O = "rgb(var(--orange))", INK = "rgb(var(--ink))"
 const btn = "btn-green rounded-xl px-4 py-2.5";
 const dot = (c: string) => <span className={`ms-2 inline-block h-3.5 w-3.5 rounded-full border-2 border-white/70 align-middle ${c}`} />;
 const WIN_REDIRECT_MS = 13000;   // بعد الفوز: العودة للرئيسية
-const END_REDIRECT_MS = 3000;    // بعد إنهاء المنظم للجولة
 
 // هندسة الخلايا السداسية (قمة مسطحة) بلوحة مستطيلة ثابتة: الأعمدة الفردية تنزل نصف خلية
 const R = 34, HH = Math.sqrt(3) * R, PAD = 8, SHRINK = 0.94;
@@ -101,15 +101,27 @@ export default function GameBoard({ room, players, me, onError, onRefresh, mode 
     return () => window.removeEventListener("keydown", h);
   }, []);
 
-  // ===== الفوز: عودة للرئيسية بعد 13 ثانية. إنهاء الجولة: عودة بعد 3 ثوانٍ =====
+  // ===== فوز المباراة: عودة للرئيسية بعد 13 ثانية (إنهاء المنظم تعالجه صفحة الغرفة فورًا) =====
   useEffect(() => {
-    if (!finished || !sawLive.current) return;
-    const ms = ended ? END_REDIRECT_MS : WIN_REDIRECT_MS;
+    if (!finished || ended || !sawLive.current) return;
+    const ms = WIN_REDIRECT_MS;
     setLeft(Math.round(ms / 1000));
     const tick = setInterval(() => setLeft((v) => Math.max(0, v - 1)), 1000);
     const go = setTimeout(() => router.push("/"), ms);
     return () => { clearInterval(tick); clearTimeout(go); };
   }, [finished, ended, router]);
+  // ===== الجولات: لافتة قصيرة عند بدء جولة جديدة =====
+  const round = room.current_round ?? 1, total = room.total_rounds ?? 1;
+  const prevRound = useRef(round);
+  const [banner, setBanner] = useState("");
+  useEffect(() => {
+    if (round !== prevRound.current) {
+      if (round > prevRound.current && room.last_round_winner) setBanner(`فاز الفريق ${TEAM[room.last_round_winner]} بالجولة ${round - 1} — بدأت الجولة ${round}`);
+      prevRound.current = round;
+      const t = setTimeout(() => setBanner(""), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [round, room.last_round_winner]);
   useEffect(() => { if (confirmEnd && finished) setConfirmEnd(false); }, [confirmEnd, finished]);
 
   // ===== اللوحة =====
@@ -132,6 +144,12 @@ export default function GameBoard({ room, players, me, onError, onRefresh, mode 
 
   return (
     <div className="mt-4">
+      {total > 1 && (
+        <p className="mb-3 text-center text-sm font-medium">
+          الجولة {round} من {total} · <span className="text-team-green">الأخضر {room.green_wins ?? 0}</span> – <span className="text-team-orange">{room.orange_wins ?? 0} البرتقالي</span>
+        </p>
+      )}
+      {banner && <p role="status" className="page-in mb-3 rounded-2xl bg-team-green/15 p-3 text-center font-bold">{banner}</p>}
       {showBoard && <svg viewBox={geo.vb} role="img" aria-label="لوحة اللعب" className="board mx-auto w-full max-w-md" strokeLinejoin="round">
         {geo.cells.filter((x) => x.kind !== "play").map(({ r, c, kind }) => {
           const { x, y } = center(r, c);
@@ -167,12 +185,14 @@ export default function GameBoard({ room, players, me, onError, onRefresh, mode 
         {finished ? (
           ended ? (
             <>
-              <h2 className="font-display text-3xl">أنهى المنظم الجولة</h2>
-              {celebrate && <p className="mt-2 opacity-80">سيتم إرجاعك للصفحة الرئيسية خلال {left} ثوانٍ…</p>}
+              <h2 className="font-display text-3xl">أنهى المنظم اللعبة</h2>
             </>
           ) : (
             <>
-              <h2 className="font-display text-3xl" style={{ color: room.winner === "green" ? G : O }}>فاز الفريق {TEAM[room.winner ?? ""]}!</h2>
+              <h2 className="font-display text-3xl" style={{ color: room.winner === "green" ? G : room.winner === "orange" ? O : INK }}>
+                {room.winner === "tie" ? "تعادل!" : `فاز الفريق ${TEAM[room.winner ?? ""]}!`}
+              </h2>
+              {total > 1 && <p className="mt-1 opacity-80">النتيجة: الأخضر {room.green_wins ?? 0} – {room.orange_wins ?? 0} البرتقالي</p>}
               {celebrate && <p className="mt-2 opacity-80">العودة للرئيسية خلال {left} ثانية…</p>}
             </>
           )
@@ -216,7 +236,7 @@ export default function GameBoard({ room, players, me, onError, onRefresh, mode 
             <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "green" })} className={btn}>للأخضر{dot("bg-team-green")}</button>
             <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "orange" })} className={btn}>للبرتقالي{dot("bg-team-orange")}</button>
             {manual && <button type="button" onClick={() => call("assign_cell", { p_cell: act, p_team: "" })} className={btn}>تفريغ الخلية</button>}
-            <button type="button" onClick={() => setTimerOpen((v) => !v)} className={btn} aria-expanded={timerOpen}>ضبط الوقت</button>
+            {!manual && <button type="button" onClick={() => setTimerOpen((v) => !v)} className={btn} aria-expanded={timerOpen}>ضبط الوقت</button>}
             <button type="button" onClick={() => call("skip_cell")} className={btn}>تخطي</button>
           </>)}
           <button type="button" onClick={() => setConfirmEnd(true)} className={btn}>إنهاء الجولة</button>

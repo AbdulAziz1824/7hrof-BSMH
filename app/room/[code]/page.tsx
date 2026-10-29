@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { QRCodeSVG } from "qrcode.react";
@@ -9,7 +9,7 @@ import { supabase, ensureSession } from "@/lib/supabase";
 import { arError } from "@/lib/errors";
 import GameBoard, { type GameRoom } from "@/components/GameBoard";
 
-type Room = GameRoom & { code: string; total_rounds: number; mode: string; timer_seconds: number };
+type Room = GameRoom & { code: string; mode: string; timer_seconds: number };
 type Player = { id: string; user_id: string; name: string; team: "green" | "orange" | null; is_host: boolean };
 const MODES: Record<string, string> = { board_buzzer: "لوحة + أزرار سرعة", buzzer_only: "لوحة + أزرار سرعة", board_manual: "لوحة بتحكم يدوي" };
 const timerLabel = (s: number) => (s === 0 ? "بدون وقت" : s === 10 ? "10 ثوانٍ" : `${s} ثانية`);
@@ -25,6 +25,8 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     setOrigin(location.origin);
@@ -57,6 +59,33 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
   const isHost = players.some((p) => p.user_id === me && p.is_host);
   const manual = room?.mode === "board_manual";
   const hasBothTeams = manual || players.some((p) => p.team === "green") && players.some((p) => p.team === "orange");
+
+  // المنظم أنهى اللعبة: يرجع الجميع للرئيسية فورًا
+  const endedByHost = room?.status === "finished" && !room.winner;
+  useEffect(() => { if (endedByHost) router.replace("/"); }, [endedByHost, router]);
+
+  // احتياط إن تأخر الاتصال المباشر: نجلب حالة الغرفة كل 2.5 ثانية حتى تنتهي
+  const roomId = room?.id, roomDone = room?.status === "finished";
+  useEffect(() => {
+    if (!roomId || roomDone) return;
+    const id = setInterval(async () => {
+      const { data } = await supabase.from("rooms").select("*").eq("id", roomId).maybeSingle();
+      if (data) setRoom((prev) => (prev && JSON.stringify(prev) === JSON.stringify(data) ? prev : (data as Room)));
+    }, 2500);
+    return () => clearInterval(id);
+  }, [roomId, roomDone]);
+
+  // اللوحة اليدوية: تبدأ مباشرة بدون غرفة انتظار
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (manual && isHost && room?.status === "waiting" && !autoStarted.current) { autoStarted.current = true; void start(); }
+  }, [manual, isHost, room?.status]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function leave() {
+    setLeaving(true);
+    if (room && !isHost) await supabase.rpc("leave_room", { p_room: room.id });
+    router.push("/");
+  }
 
   async function start() {
     if (!room) return;
@@ -158,6 +187,20 @@ export default function WaitingRoom({ params }: { params: { code: string } }) {
           ) : (
             <p role="status" className="mt-6 rounded-2xl bg-surface p-4 text-center">جارٍ تجهيز اللوحة…</p>
           )}
+
+          <div className="mt-8 border-t border-ink/10 pt-5 text-center">
+            {confirmLeave ? (
+              <div>
+                <p className="mb-3 opacity-80">{isHost ? "ستخرج من الصفحة وتبقى الغرفة مفتوحة، وتقدر تعود إليها برابطها." : "هل تريد الخروج من الغرفة؟"}</p>
+                <div className="flex justify-center gap-3">
+                  <button type="button" onClick={leave} disabled={leaving} className="btn-green rounded-xl px-6 py-2.5">{leaving ? "جارٍ الخروج…" : "نعم، خروج"}</button>
+                  <button type="button" onClick={() => setConfirmLeave(false)} className="rounded-xl border-2 border-team-green px-6 py-2.5 font-bold">إلغاء</button>
+                </div>
+              </div>
+            ) : (
+              <button type="button" onClick={() => setConfirmLeave(true)} className="btn-green rounded-xl px-8 py-2.5">خروج</button>
+            )}
+          </div>
         </>
       )}
       {!room && !error && <p>جارٍ تحميل الغرفة…</p>}

@@ -29,6 +29,12 @@ export default function CreateRoom() {
         p_host_plays: canPlay && plays, p_team: canPlay && plays ? team : null,
       });
       if (error) throw error;
+      if (mode === "board_manual") {   // اللوحة اليدوية: بدون لاعبين ولا مؤقت، وتبدأ مباشرة
+        const t = await supabase.rpc("set_timer", { p_room: data.room_id, p_seconds: 0 });
+        if (t.error) throw t.error;
+        const st = await supabase.rpc("start_game", { p_room: data.room_id });
+        if (st.error) throw st.error;
+      }
       router.push(`/room/${data.code}`);
     } catch (err) { setError(arError(err)); setBusy(false); }
   }
