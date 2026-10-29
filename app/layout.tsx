@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: { default: "7ROF BSMH | لعبة الحروف الجماعية", template: "%s | 7ROF BSMH" },
   description: "العب الحروف وتحدَّ فريقًا آخر مباشرة: أنشئ غرفة، شارك الرمز، واحسم الخلايا بأسرع إجابة.",
   applicationName: "7ROF BSMH",
+  appleWebApp: { capable: true, title: "7ROF BSMH", statusBarStyle: "default" },
   openGraph: { siteName: "7ROF BSMH", locale: "ar_SA", type: "website" },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0F1D2E" };

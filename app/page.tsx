@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import InstallBar from "@/components/InstallBar";
 import { delay } from "@/lib/anim";
 
 // لوحة العرض: نفس هندسة لوحة اللعب (مستطيلة، أعمدة فردية تنزل نصف خلية)
@@ -28,6 +29,7 @@ const FEATURES = [
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 sm:px-6">
+      <InstallBar />
       <header className="flex items-center justify-between gap-3 py-4 sm:py-6">
         <Logo size={34} />
         <nav className="flex gap-1 text-sm font-medium sm:gap-3">
